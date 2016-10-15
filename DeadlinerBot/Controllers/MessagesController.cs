@@ -7,12 +7,17 @@ using System.Web.Http;
 using System.Web.Http.Description;
 using Microsoft.Bot.Connector;
 using Newtonsoft.Json;
-
+using Microsoft.WindowsAzure.MobileServices;
 namespace DeadlinerBot
 {
     [BotAuthentication]
     public class MessagesController : ApiController
     {
+        public static MobileServiceClient MobileService =
+new MobileServiceClient(
+    "https://deadlinerhse.azurewebsites.net"
+);
+
         /// <summary>
         /// POST: api/Messages
         /// Receive a message from a user and reply to it
@@ -28,6 +33,15 @@ namespace DeadlinerBot
                 // return our reply to the user
                 Activity reply = activity.CreateReply($"You sent {activity.Text} which was {length} characters");
                 await connector.Conversations.ReplyToActivityAsync(reply);
+
+
+                //for test only
+                TodoItem item = new TodoItem(){Title = "TG",
+                Complete = false,
+                Text = "activity.Text",
+                DueTo = (DateTime)activity.Timestamp
+            };
+                await MessagesController.MobileService.GetTable<TodoItem>().InsertAsync(item);
             }
             else
             {
