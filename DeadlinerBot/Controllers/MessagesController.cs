@@ -19,6 +19,7 @@ new MobileServiceClient(
 );
         static int stage = 0;
         static String title = "";
+        static String text = "";
         TodoItem item = null;
         /// <summary>
         /// POST: api/Messages
@@ -33,13 +34,14 @@ new MobileServiceClient(
                 int length = (activity.Text ?? string.Empty).Length;
 
                 string message = "";
-                
+                int i;
                 switch (stage)
                 {
                     case 0: item = new TodoItem(); message = "Пришли мне название задачи"; stage++; break;
                     case 1: item = item ?? new TodoItem(); title = activity.Text; message = "Пришли мне описание задачи"; stage++; break;
-                    case 2: item = item ?? new TodoItem(); item.Title = title; item.Text = activity.Text; item.DueTo = ((DateTime)activity.Timestamp).AddDays(1); await MessagesController.MobileService.GetTable<TodoItem>().InsertAsync(item); message = $"Задача '{item.Title}':'{item.Text}' добавлена с дедлайном на {item.DueTo}."; stage = 0; break;
-
+                    case 2: item = item ?? new TodoItem();  text = activity.Text; message = "Введите количество дней до дедлайна"; stage++; break;
+                    case 3: if (int.TryParse(activity.Text, out i)) { item = item ?? new TodoItem(); item.Title = title; item.Text = text; item.DueTo = ((DateTime)activity.Timestamp).AddDays(i); await MessagesController.MobileService.GetTable<TodoItem>().InsertAsync(item); message = $"Задача {item.Title}:{item.Text} добавлена с дедлайном на {item.DueTo}."; stage = 0; break; }
+                    else { message = "Пришли целое число дней";  break; }
                 }
 
                 // return our reply to the user
