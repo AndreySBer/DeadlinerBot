@@ -17,9 +17,10 @@ namespace DeadlinerBot
 new MobileServiceClient(
     "https://deadlinerhse.azurewebsites.net"
 );
-        static int stage = 0;
+        static int stage = -2;
         static String title = "";
         static String text = "";
+        static String UserLogin = null;
         TodoItem item = null;
         /// <summary>
         /// POST: api/Messages
@@ -35,13 +36,23 @@ new MobileServiceClient(
 
                 string message = "";
                 int i;
-                switch (stage)
+                if (stage==-2)
                 {
-                    case 0: item = new TodoItem(); message = "Пришли мне название задачи"; stage++; break;
-                    case 1: item = item ?? new TodoItem(); title = activity.Text; message = "Пришли мне описание задачи"; stage++; break;
-                    case 2: item = item ?? new TodoItem();  text = activity.Text; message = "Введите количество дней до дедлайна"; stage++; break;
-                    case 3: if (int.TryParse(activity.Text, out i)) { item = item ?? new TodoItem(); item.Title = title; item.Text = text; item.DueTo = ((DateTime)activity.Timestamp).AddDays(i); await MessagesController.MobileService.GetTable<TodoItem>().InsertAsync(item); message = $"Задача {item.Title}:{item.Text} добавлена с дедлайном на {item.DueTo}."; stage = 0; break; }
-                    else { message = "Пришли целое число дней";  break; }
+                    message = "Пришли мне свой логин";
+                    stage = -1;
+                }
+                else
+                {
+                    switch (stage)
+                    {
+                        case -1: item = item ?? new TodoItem(); UserLogin = activity.Text; message = "Пришли мне название задачи"; stage = 1; break;
+                        case 0: item = item ?? new TodoItem(); message = "Пришли мне название задачи"; stage++; break;
+                        case 1: item = item ?? new TodoItem(); title = activity.Text; message = "Пришли мне описание задачи"; stage++; break;
+                        case 2: item = item ?? new TodoItem(); text = activity.Text; message = "Введите количество дней до дедлайна"; stage++; break;
+                        case 3:
+                            if (int.TryParse(activity.Text, out i)) { item = item ?? new TodoItem(); item.UserName = UserLogin;  item.Title = title; item.Text = text; item.DueTo = ((DateTime)activity.Timestamp).AddDays(i); await MessagesController.MobileService.GetTable<TodoItem>().InsertAsync(item); message = $"Задача {item.Title}:{item.Text} добавлена с дедлайном на {item.DueTo}."; stage = 0; break; }
+                            else { message = "Пришли целое число дней"; break; }
+                    }
                 }
 
                 // return our reply to the user
