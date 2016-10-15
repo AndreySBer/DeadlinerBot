@@ -17,7 +17,9 @@ namespace DeadlinerBot
 new MobileServiceClient(
     "https://deadlinerhse.azurewebsites.net"
 );
-
+        static int stage = 0;
+        static String title = "";
+        TodoItem item = null;
         /// <summary>
         /// POST: api/Messages
         /// Receive a message from a user and reply to it
@@ -30,18 +32,21 @@ new MobileServiceClient(
                 // calculate something for us to return
                 int length = (activity.Text ?? string.Empty).Length;
 
+                string message = "";
+                
+                switch (stage)
+                {
+                    case 0: item = new TodoItem(); message = "Пришли мне название задачи"; stage++; break;
+                    case 1: item = item ?? new TodoItem(); title = activity.Text; message = "Пришли мне описание задачи"; stage++; break;
+                    case 2: item = item ?? new TodoItem(); item.Title = title; item.Text = activity.Text; item.DueTo = ((DateTime)activity.Timestamp).AddDays(1); await MessagesController.MobileService.GetTable<TodoItem>().InsertAsync(item); message = $"Задача '{item.Title}':'{item.Text}' добавлена с дедлайном на {item.DueTo}."; stage = 0; break;
+
+                }
+
                 // return our reply to the user
-                Activity reply = activity.CreateReply($"You sent {activity.Text} which was {length} characters");
+                Activity reply = activity.CreateReply(message);//$"You sent {activity.Text} which was {length} characters"
                 await connector.Conversations.ReplyToActivityAsync(reply);
 
 
-                //for test only
-                TodoItem item = new TodoItem(){Title = "TG",
-                Complete = false,
-                Text = "activity.Text",
-                DueTo = (DateTime)activity.Timestamp
-            };
-                await MessagesController.MobileService.GetTable<TodoItem>().InsertAsync(item);
             }
             else
             {
