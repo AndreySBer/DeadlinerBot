@@ -33,32 +33,36 @@ new MobileServiceClient(
                 ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
                 // calculate something for us to return
                 int length = (activity.Text ?? string.Empty).Length;
-
-                string message = "";
-                int i;
-                if (stage==-2)
+                if (activity.ChannelId != "slack" ||
+                    activity.Text.ToLower().StartsWith("toDL".ToLower()) ||
+                    stage == -1 ||
+                    stage > 0)
                 {
-                    message = "Пришли мне свой логин";
-                    stage = -1;
-                }
-                else
-                {
-                    switch (stage)
+                    string message = "";
+                    int i;
+                    if (stage == -2)
                     {
-                        case -1: item = item ?? new TodoItem(); UserLogin = activity.Text; message = "Пришли мне название задачи"; stage = 1; break;
-                        case 0: item = item ?? new TodoItem(); message = "Пришли мне название задачи"; stage++; break;
-                        case 1: item = item ?? new TodoItem(); title = activity.Text; message = "Пришли мне описание задачи"; stage++; break;
-                        case 2: item = item ?? new TodoItem(); text = activity.Text; message = "Введите количество дней до дедлайна"; stage++; break;
-                        case 3:
-                            if (int.TryParse(activity.Text, out i)) { item = item ?? new TodoItem(); item.UserName = UserLogin;  item.Title = title; item.Text = text; item.DueTo = ((DateTime)activity.Timestamp).AddDays(i); await MessagesController.MobileService.GetTable<TodoItem>().InsertAsync(item); message = $"Задача {item.Title}:{item.Text} добавлена с дедлайном на {item.DueTo}."; stage = 0; break; }
-                            else { message = "Пришли целое число дней"; break; }
+                        message = "Пришли мне свой логин";
+                        stage = -1;
                     }
+                    else
+                    {
+                        switch (stage)
+                        {
+                            case -1: item = item ?? new TodoItem(); UserLogin = activity.Text; message = "Пришли мне название задачи"; stage = 1; break;
+                            case 0: item = item ?? new TodoItem(); message = "Пришли мне название задачи"; stage++; break;
+                            case 1: item = item ?? new TodoItem(); title = activity.Text; message = "Пришли мне описание задачи"; stage++; break;
+                            case 2: item = item ?? new TodoItem(); text = activity.Text; message = "Введите количество дней до дедлайна"; stage++; break;
+                            case 3:
+                                if (int.TryParse(activity.Text, out i)) { item = item ?? new TodoItem(); item.UserName = UserLogin; item.Title = title; item.Text = text; item.DueTo = ((DateTime)activity.Timestamp).AddDays(i); await MessagesController.MobileService.GetTable<TodoItem>().InsertAsync(item); message = $"Задача {item.Title}:{item.Text} добавлена с дедлайном на {item.DueTo}."; stage = 0; break; }
+                                else { message = "Пришли целое число дней"; break; }
+                        }
+                    }
+
+                    // return our reply to the user
+                    Activity reply = activity.CreateReply(message);//$"You sent {activity.Text} which was {length} characters"
+                    await connector.Conversations.ReplyToActivityAsync(reply);
                 }
-
-                // return our reply to the user
-                Activity reply = activity.CreateReply(message);//$"You sent {activity.Text} which was {length} characters"
-                await connector.Conversations.ReplyToActivityAsync(reply);
-
 
             }
             else
